@@ -7,14 +7,6 @@ import env from "./config/env";
 
 const PORT = env.PORT;
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the Blogger API!");
-});
-
-app.get("/error", (req, res) => {
-  throw new Error("This is a test error!");
-});
-
 // Starting the server
 app.listen(PORT, () => {
   console.log(`Blogger server is running on port ${PORT}`);

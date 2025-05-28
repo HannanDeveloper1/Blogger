@@ -3,20 +3,15 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
-import fs from "fs";
-import path from "path";
 import env from "./config/env";
+import errorMiddleware from "./middlewares/error.middleware";
+import logger from "./utils/logger";
+import ErrorHandler from "./utils/errorHandler";
 
 const app = express();
 
-const logDirectory = path.join(__dirname, "../logs");
-if (!fs.existsSync(logDirectory)) fs.mkdirSync(logDirectory);
+app.use(morgan("dev"));
 
-// create a write stream (append mode)
-const accessLogStream = fs.createWriteStream(
-  path.join(logDirectory, "access.log"),
-  { flags: "a" }
-);
 // Middleware setup
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -28,7 +23,22 @@ app.use(
 );
 app.use(cookieParser());
 app.use(helmet()); // Security middleware to set various HTTP headers
-// Logging middleware and also create a various types of logs files in the logs folder
-app.use(morgan("combined", { stream: accessLogStream }));
+app.use(
+  morgan("combined", {
+    stream: {
+      write: (message) => logger.info(message.trim()),
+    },
+  })
+);
+
+app.get("/", (req, res) => {
+  res.send("Welcome to the Blogger API!");
+});
+
+app.get("/error", (req, res, next) => {
+  next(new ErrorHandler("This is a test error!", 500));
+});
+
+app.use(errorMiddleware); // Error handling middleware
 
 export default app;
