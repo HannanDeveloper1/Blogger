@@ -3,10 +3,16 @@ import asyncHandler from "../middlewares/asyncHandler.middleware";
 import hashPassword from "../utils/hashPassword";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
-import { generateAccessToken, issueRefreshToken } from "../utils/tokens";
+import {
+  generateAccessToken,
+  issueRefreshToken,
+  revokeRefreshToken,
+  verifyRefreshToken,
+} from "../utils/tokens";
 import env from "../config/env";
 import bcrypt from "bcrypt";
 
+// User registration and login controllers
 export const registerUser = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { name, email, password } = req.body;
@@ -68,6 +74,36 @@ export const loginUser = asyncHandler(
         maxAge: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
       })
       .status(200)
+      .json({
+        success: true,
+        accessToken,
+      });
+  }
+);
+
+// Token refresh controller
+export const refreshToken = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const refreshToken = req.cookies.jid;
+
+    if (!refreshToken) {
+      return next(new ErrorHandler("No refresh token provided", 401));
+    }
+
+    const userId = await verifyRefreshToken(refreshToken);
+
+    await revokeRefreshToken(refreshToken);
+
+    const newTokenId = await issueRefreshToken(userId);
+    const accessToken = generateAccessToken({ userId });
+
+    res
+      .cookie("jid", newTokenId, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
+      })
       .json({
         success: true,
         accessToken,
