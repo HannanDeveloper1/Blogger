@@ -91,6 +91,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@prisma/client": "^6.8.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
@@ -98,6 +99,7 @@
     "express-rate-limit": "^7.5.0",
     "helmet": "^8.1.0",
     "morgan": "^1.10.0",
+    "prisma": "^6.8.2",
     "winston": "^3.17.0",
     "zod": "^3.25.28"
   }

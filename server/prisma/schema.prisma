@@ -1,0 +1,122 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String        @id @default(cuid())
+  email         String        @unique
+  username      String        @unique
+  avatar        String?
+  name          String?
+  password      String?
+  about         String?
+  onboarding    Boolean       @default(false)
+  comments      Comment[]
+  likes         Like[]
+  follows       Follow[]      @relation("follower")
+  following     Follow[]      @relation("following")
+  isVerified    Boolean       @default(false)
+  accountStatus AccountStatus @default(active) // 'active' | 'suspended' | 'deleted'
+  role          Role          @default(user) // 'user' | 'admin'
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  Post          Post[]
+
+  @@map("users")
+}
+
+enum Role {
+  user
+  admin
+}
+
+enum AccountStatus {
+  active
+  suspended
+  deleted
+}
+
+enum PostStatus {
+  draft
+  published
+  archived
+}
+
+model Post {
+  id        String     @id @default(cuid())
+  title     String
+  content   String?
+  authorId  String
+  status    PostStatus @default(draft) // 'draft' | 'published' | 'archived'
+  author    User       @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  likes     Like[]
+  tags      PostTag[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@map("posts")
+}
+
+// comment object type
+
+model Comment {
+  id        String   @id @default(cuid())
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  author    User     @relation(fields: [authorId], references: [id])
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  postId    String
+  createdAt DateTime @default(now())
+
+  @@unique([userId, postId]) // Prevent duplicate likes
+  @@map("likes")
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  follower    User     @relation("follower", fields: [followerId], references: [id])
+  followerId  String
+  following   User     @relation("following", fields: [followingId], references: [id])
+  followingId String
+  createdAt   DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model Tag {
+  id    String    @id @default(cuid())
+  name  String    @unique
+  posts PostTag[]
+
+  @@map("tags")
+}
+
+model PostTag {
+  post   Post   @relation(fields: [postId], references: [id])
+  postId String
+  tag    Tag    @relation(fields: [tagId], references: [id])
+  tagId  String
+
+  @@id([postId, tagId])
+  @@map("post_tags")
+}
