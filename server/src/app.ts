@@ -7,6 +7,7 @@ import env from "./config/env";
 import errorMiddleware from "./middlewares/error.middleware";
 import logger from "./utils/logger";
 import ErrorHandler from "./utils/errorHandler";
+import authRoutes from "./routes/auth.routes";
 
 const app = express();
 
@@ -31,13 +32,8 @@ app.use(
   })
 );
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the Blogger API!");
-});
-
-app.get("/error", (req, res, next) => {
-  next(new ErrorHandler("This is a test error!", 500));
-});
+// Routes
+app.use("/api/auth", authRoutes);
 
 app.use(errorMiddleware); // Error handling middleware
 

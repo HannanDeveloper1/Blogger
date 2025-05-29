@@ -1,8 +1,10 @@
-import { NextFunction, Request } from "express";
+import { NextFunction, Request, RequestHandler, Response } from "express";
 import { ZodSchema } from "zod";
 import ErrorHandler from "../utils/errorHandler";
 
-export default function validateBody<T extends ZodSchema>(schema: T) {
+export default function validateBody<T extends ZodSchema>(
+  schema: T
+): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
     const result = schema.safeParse(req.body);
     if (!result.success) {
