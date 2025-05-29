@@ -1,24 +1,29 @@
 import rateLimit from "express-rate-limit";
+import RedisStore, { RedisReply } from "rate-limit-redis";
+import Redis from "ioredis";
+import env from "../config/env";
 
-export const rateLimiter = ({
-  limit,
-  windowMs,
-}: {
-  limit: number;
+const redisClient = new Redis(env.REDIS_URL);
+
+interface RateLimiterOptions {
   windowMs: number;
-}) => {
+  max: number;
+  message?: string;
+}
+
+export default function rateLimiter(options: RateLimiterOptions) {
   return rateLimit({
-    windowMs, // Time window in milliseconds
-    max: limit, // Maximum number of requests allowed per windowMs
-    standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
-    legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+    windowMs: options.windowMs, // Time window in milliseconds
+    max: options.max, // Maximum number of requests allowed within the window
+    standardHeaders: true, // Send standard rate limit headers
+    legacyHeaders: false, // Disable legacy headers,
+    message: {
+      success: false,
+      message: options.message || "Too many requests, please try again later.",
+    },
+    store: new RedisStore({
+      sendCommand: (...args: [string, ...any[]]): Promise<RedisReply> =>
+        redisClient.call(...args) as Promise<RedisReply>,
+    }),
   });
-};
-
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 10, // Limit each IP to 100 requests per windowMs
-});
-
-export default authLimiter;
-export { authLimiter };
+}
