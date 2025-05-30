@@ -12,7 +12,7 @@ export interface JWTPayload {
 // Create a signed JWT (short-lived)
 export function generateAccessToken(payload: JWTPayload): string {
   return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: parseInt(env.ACCESS_TOKEN_EXP_MINS) * 24 * 60 * 60 * 1000,
+    expiresIn: parseInt(env.ACCESS_TOKEN_EXP_MINS) * 60 * 1000,
   });
 }
 
@@ -22,7 +22,7 @@ export async function issueRefreshToken(userId: string): Promise<string> {
   const key = `refresh:${tokenId}`;
 
   await client.set(key, userId, {
-    EX: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
+    EX: parseInt(env.ACCESS_TOKEN_EXP_MINS) * 60,
   });
   return tokenId;
 }
@@ -38,4 +38,29 @@ export async function verifyRefreshToken(tokenId: string): Promise<string> {
 // Revoke a refresh token
 export async function revokeRefreshToken(tokenId: string): Promise<void> {
   await client.del(`refresh:${tokenId}`);
+}
+
+export async function issueResetToken(userId: string): Promise<string> {
+  // 32 bytes = 64 hex chars
+  const nonce = crypto.randomBytes(32).toString("hex");
+  const key = `reset:${userId}:${nonce}`;
+  // TTL in seconds (e.g. 3600 = 1 hour)
+  const ttl = 60 * 60;
+
+  await client.set(key, "1", { EX: ttl });
+  return nonce;
+}
+
+export async function verifyResetToken(
+  userId: string,
+  nonce: string
+): Promise<void> {
+  const key = `reset:${userId}:${nonce}`;
+  const exists = await client.get(key);
+
+  if (!exists) {
+    throw new Error("Invalid or expired reset token");
+  }
+
+  await client.del(key);
 }

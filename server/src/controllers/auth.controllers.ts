@@ -9,8 +9,10 @@ import ejs from "ejs";
 import {
   generateAccessToken,
   issueRefreshToken,
+  issueResetToken,
   revokeRefreshToken,
   verifyRefreshToken,
+  verifyResetToken,
 } from "../utils/tokens";
 import env from "../config/env";
 import bcrypt from "bcrypt";
@@ -127,7 +129,7 @@ export const forgetPassword = asyncHandler(
       return next(new ErrorHandler("No Account found with this email!", 404));
     }
 
-    const nonce = await issueRefreshToken(user.id);
+    const nonce = await issueResetToken(user.id);
 
     const resetUrl = `${env.CLIENT_ORIGIN}/reset-password?uid=${user.id}&token=${nonce}`;
     const templatePath = path.join(
@@ -157,6 +159,55 @@ export const forgetPassword = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Password reset link sent to your email",
+    });
+  }
+);
+
+export const resetPassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { uid, token } = req.query;
+    const { newPassword } = req.body;
+
+    // Validate query params
+    if (typeof uid !== "string" || typeof token !== "string") {
+      return next(new ErrorHandler("Missing uid or token in request", 400));
+    }
+
+    await verifyResetToken(uid, token);
+
+    const user = await prisma.user.update({
+      where: { id: uid },
+      data: { password: await hashPassword(newPassword) },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password has been reset successfully",
+    });
+
+    const supportUrl = `${env.CLIENT_ORIGIN}/support/account`;
+    const templatePath = path.join(
+      __dirname,
+      "../templates/password-updated.ejs"
+    );
+
+    const html = await ejs.renderFile(templatePath, {
+      name: user.name,
+      logoURL,
+      clientOrigin: env.CLIENT_ORIGIN,
+      supportUrl,
+      headers: {
+        "X-Priority": "1 (Highest)",
+        "X-MSMail-Priority": "High",
+        Importance: "High",
+        Precedence: "bulk", // signals a system-generated mail
+      },
+    });
+    await sendMail({
+      to: user.email,
+      subject: "Password Updated Successfully",
+      html,
+      text: `Your password has been updated successfully. If you did not request this change, please contact support at ${supportUrl}`,
     });
   }
 );

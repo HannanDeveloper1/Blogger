@@ -4,12 +4,14 @@ import {
   forgetPasswordSchema,
   loginSchema,
   registerSchema,
+  resetPasswordSchema,
 } from "../schemas/auth.schemas";
 import {
   forgetPassword,
   loginUser,
   refreshToken,
   registerUser,
+  resetPassword,
 } from "../controllers/auth.controllers";
 import rateLimiter from "../utils/rateLimiter";
 
@@ -50,5 +52,6 @@ router.post(
   validateBody(forgetPasswordSchema),
   forgetPassword
 );
+router.put("/reset-password", validateBody(resetPasswordSchema), resetPassword);
 
 export default router;
