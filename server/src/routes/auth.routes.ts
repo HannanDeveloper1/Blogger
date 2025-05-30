@@ -22,7 +22,7 @@ const router = Router();
 
 // Register user - route
 const registerLimiter = rateLimiter({
-  windowMs: 10 * 60 * 1000, // 10 minutes
+  windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // Limit to 10 requests per window
   message: "Too many sign-up attempts, please try again in 15 minutes.",
 });
@@ -35,7 +35,7 @@ router.post(
 
 // Login user - route
 const loginLimiter = rateLimiter({
-  windowMs: 10 * 60 * 1000,
+  windowMs: 10 * 60 * 1000, // 10 minutes
   max: 5,
   message: "Too many login attempts, please wait 10 minutes or reset password.",
 });
@@ -50,13 +50,26 @@ const refreshLimiter = rateLimiter({
 router.put("/refresh-token", refreshLimiter, refreshToken);
 
 // Forget & reset password - routes
+const forgetLimiter = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  message: "Password reset limit reached—please try again in an hour.",
+});
 router.post(
   "/forget-password",
+  forgetLimiter,
   validateBody(forgetPasswordSchema),
   forgetPassword
 );
+
+const resetLimiter = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 5,
+  message: "Too many password reset attempts—please request a new link.",
+});
 router.put(
   "/reset-password",
+  resetLimiter,
   authGuard,
   validateBody(resetPasswordSchema),
   resetPassword
@@ -64,6 +77,13 @@ router.put(
 
 // Email verifications
 router.post("/send-verification", authGuard, sendVerification);
-router.put("/verify-email", verifyEmail);
+
+const verifyLimiter = rateLimiter({
+  windowMs: 60 * 60 * 1000,
+  max: 10,
+  message:
+    "Too many verification attempts—please request a new verification email.",
+});
+router.put("/verify-email", verifyLimiter, verifyEmail);
 
 export default router;
