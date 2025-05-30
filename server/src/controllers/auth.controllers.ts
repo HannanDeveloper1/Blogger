@@ -1,6 +1,15 @@
 import { NextFunction, Request, Response } from "express";
 import asyncHandler from "../middlewares/asyncHandler.middleware";
 import hashPassword from "../utils/hashPassword";
+
+// Extend Express Request type to include 'user'
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { id: string; [key: string]: any };
+    }
+  }
+}
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
 import path from "path";
@@ -10,6 +19,7 @@ import {
   generateAccessToken,
   issueRefreshToken,
   issueResetToken,
+  issueVerifyToken,
   revokeRefreshToken,
   verifyRefreshToken,
   verifyResetToken,
@@ -94,21 +104,7 @@ export const loginUser = asyncHandler(
     const accessToken = generateAccessToken({ userId: user.id });
     const refreshToken = await issueRefreshToken(user.id);
 
-    // Set the refresh token as an HTTP-only cookie and send the access token in the response
-    res
-      .cookie("jid", refreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
-      })
-      .status(200)
-      .json({
-        success: true,
-        accessToken,
-      });
-
-    // 2) Gather login context:
+    // Gather login context:
     const loginTime = new Date().toLocaleString("en-US", {
       timeZone: "UTC",
       month: "short",
@@ -133,6 +129,19 @@ export const loginUser = asyncHandler(
     const ua = new UAParser(req.headers["user-agent"]);
     const uaResult = ua.getResult();
     const loginDevice = `${uaResult.browser.name} on ${uaResult.os.name}`;
+    // Set the refresh token as an HTTP-only cookie and send the access token in the response
+    res
+      .cookie("jid", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
+      })
+      .status(200)
+      .json({
+        success: true,
+        accessToken,
+      });
 
     // Sending alert
     const templatePath = path.join(__dirname, "../templates/login-alert.ejs");
@@ -216,16 +225,16 @@ export const forgetPassword = asyncHandler(
         Precedence: "bulk", // signals a system-generated mail
       },
     });
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
     setTimeout(async () => {
       await sendMail({
         to: user.email,
         subject: "Reset your password",
         html,
         text: `Reset your password: ${resetUrl}`,
-      });
-      res.status(200).json({
-        success: true,
-        message: "Password reset link sent to your email",
       });
     }, 1000);
   }
@@ -279,5 +288,45 @@ export const resetPassword = asyncHandler(
         text: `Your password has been updated successfully. If you did not request this change, please contact support at ${supportUrl}`,
       });
     }, 2000);
+  }
+);
+
+export const sendVerification = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.user?.id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return next(new ErrorHandler("User not found", 404));
+    if (user.isVerified)
+      return res.json({ success: true, message: "Already verified" });
+
+    const nonce = await issueVerifyToken(userId as string);
+
+    const verifyUrl = `${env.CLIENT_ORIGIN}/verify-email?uid=${userId}&token=${nonce}`;
+    const templatePath = path.join(__dirname, "../templates/verify-email.ejs");
+
+    const html = await ejs.renderFile(templatePath, {
+      name: user.name,
+      logoURL,
+      verifyUrl,
+      clientOrigin: env.CLIENT_ORIGIN,
+      headers: {
+        "X-Priority": "1 (Highest)",
+        "X-MSMail-Priority": "High",
+        Importance: "High",
+        Precedence: "bulk", // signals a system-generated mail
+      },
+    });
+    res.status(200).json({
+      success: true,
+      message: "Verification link sent to your email",
+    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user.email,
+        subject: "Verify Your Email",
+        html,
+        text: `Verify your email`,
+      });
+    }, 500);
   }
 );

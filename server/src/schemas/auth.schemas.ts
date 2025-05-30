@@ -38,7 +38,10 @@ export const onboardingSchema = z.object({
 });
 
 export const forgetPasswordSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  email: z
+    .string()
+    .email("Invalid email address")
+    .min(1, "Enter the account email"),
 });
 
 // We no longer need uid/token in the POST body—those come in req.query

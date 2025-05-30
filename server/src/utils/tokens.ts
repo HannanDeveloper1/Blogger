@@ -11,9 +11,12 @@ export interface JWTPayload {
 
 // Create a signed JWT (short-lived)
 export function generateAccessToken(payload: JWTPayload): string {
-  return jwt.sign(payload, env.JWT_SECRET, {
-    expiresIn: parseInt(env.ACCESS_TOKEN_EXP_MINS) * 60 * 1000,
-  });
+  return (
+    "Bearer " +
+    jwt.sign(payload, env.JWT_SECRET, {
+      expiresIn: parseInt(env.ACCESS_TOKEN_EXP_MINS) * 60 * 1000,
+    })
+  );
 }
 
 // Issue a refresh token (longer lived, stored in Redis)
@@ -40,6 +43,7 @@ export async function revokeRefreshToken(tokenId: string): Promise<void> {
   await client.del(`refresh:${tokenId}`);
 }
 
+// Reset Tokens
 export async function issueResetToken(userId: string): Promise<string> {
   // 32 bytes = 64 hex chars
   const nonce = crypto.randomBytes(32).toString("hex");
@@ -50,7 +54,6 @@ export async function issueResetToken(userId: string): Promise<string> {
   await client.set(key, "1", { EX: ttl });
   return nonce;
 }
-
 export async function verifyResetToken(
   userId: string,
   nonce: string
@@ -62,5 +65,26 @@ export async function verifyResetToken(
     throw new Error("Invalid or expired reset token");
   }
 
+  await client.del(key);
+}
+
+// Email verification
+export async function issueVerifyToken(userId: string): Promise<string> {
+  const nonce = crypto.randomBytes(16).toString("hex");
+  const key = `verify:${userId}:${nonce}`;
+  await client.set(key, "1", {
+    EX: 24 * 60 * 60 * 60,
+  });
+  return nonce;
+}
+export async function verifyVerifyToken(
+  userId: string,
+  nonce: string
+): Promise<void> {
+  const key = `verify:${userId}:${nonce}`;
+  const ok = await client.get(key);
+  if (!ok) {
+    throw new Error("Invalid or expired verification token");
+  }
   await client.del(key);
 }

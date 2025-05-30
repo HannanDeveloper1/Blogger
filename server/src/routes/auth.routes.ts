@@ -12,8 +12,10 @@ import {
   refreshToken,
   registerUser,
   resetPassword,
+  sendVerification,
 } from "../controllers/auth.controllers";
 import rateLimiter from "../utils/rateLimiter";
+import authGuard from "../middlewares/authGuard";
 
 const router = Router();
 
@@ -52,6 +54,14 @@ router.post(
   validateBody(forgetPasswordSchema),
   forgetPassword
 );
-router.put("/reset-password", validateBody(resetPasswordSchema), resetPassword);
+router.put(
+  "/reset-password",
+  authGuard,
+  validateBody(resetPasswordSchema),
+  resetPassword
+);
+
+// Account verifications
+router.post("/send-verification", authGuard, sendVerification);
 
 export default router;
