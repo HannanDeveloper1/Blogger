@@ -13,6 +13,7 @@ import {
   registerUser,
   resetPassword,
   sendVerification,
+  verifyEmail,
 } from "../controllers/auth.controllers";
 import rateLimiter from "../utils/rateLimiter";
 import authGuard from "../middlewares/authGuard";
@@ -61,7 +62,8 @@ router.put(
   resetPassword
 );
 
-// Account verifications
+// Email verifications
 router.post("/send-verification", authGuard, sendVerification);
+router.put("/verify-email", verifyEmail);
 
 export default router;

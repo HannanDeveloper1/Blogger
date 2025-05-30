@@ -21,6 +21,7 @@ import {
   issueResetToken,
   issueVerifyToken,
   revokeRefreshToken,
+  verifyEmailToken,
   verifyRefreshToken,
   verifyResetToken,
 } from "../utils/tokens";
@@ -294,7 +295,9 @@ export const resetPassword = asyncHandler(
 export const sendVerification = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.id;
-    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const user = await prisma.user.findUnique({
+      where: { id: userId, isVerified: false },
+    });
     if (!user) return next(new ErrorHandler("User not found", 404));
     if (user.isVerified)
       return res.json({ success: true, message: "Already verified" });
@@ -328,5 +331,48 @@ export const sendVerification = asyncHandler(
         text: `Verify your email`,
       });
     }, 500);
+  }
+);
+
+export const verifyEmail = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { uid, token } = req.query;
+
+    if (!token || !uid) {
+      return next(
+        new ErrorHandler("Invalid or expired verification token", 400)
+      );
+    }
+
+    await verifyEmailToken(uid as string, token as string);
+
+    const user = await prisma.user.update({
+      where: { id: uid as string },
+      data: { isVerified: true },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Email verified successfully",
+    });
+    const onboardingUrl = `${env.CLIENT_ORIGIN}/onboarding`;
+    const templatePath = path.join(
+      __dirname,
+      "../templates/email-verified.ejs"
+    );
+
+    const html = await ejs.renderFile(templatePath, {
+      logoURL,
+      clientOrigin: env.CLIENT_ORIGIN,
+      onboardingUrl,
+    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user?.email,
+        subject: "Your Email has been verified",
+        html,
+        text: `Your Email has been verified, Now get started by just completing your profile: ${onboardingUrl}`,
+      });
+    }, 5000);
   }
 );

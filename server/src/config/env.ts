@@ -10,7 +10,7 @@ const env = z
     DATABASE_URL: z.string(),
     JWT_SECRET: z.string(),
     REDIS_URL: z.string(),
-    ACCESS_TOKEN_EXP_MINS: z.string(),
+    ACCESS_TOKEN_EXP: z.string().default("15Minutes"),
     REFRESH_TOKEN_EXP_DAYS: z.string(),
     SMTP_HOST: z.string(),
     SMTP_PORT: z.string(),

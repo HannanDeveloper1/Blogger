@@ -19,7 +19,7 @@ export default function authGuard(
   const header = req.headers.authorization;
   console.log(header);
   if (!header || !header.startsWith("Bearer ")) {
-    return next(new ErrorHandler("No authorization token provided", 401));
+    return next(new ErrorHandler("Invalid or expired token", 401));
   }
 
   const token = header.slice(7); // remove "Bearer "

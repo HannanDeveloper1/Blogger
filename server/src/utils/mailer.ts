@@ -32,6 +32,5 @@ export async function sendMail(opts: SendMailOptions) {
     text: opts.text,
     html: opts.html,
   });
-  console.log(`✉️ Sent message: ${info.messageId}`);
   return info;
 }
