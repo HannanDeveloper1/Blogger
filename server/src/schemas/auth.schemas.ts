@@ -36,3 +36,21 @@ export const onboardingSchema = z.object({
     .array(z.object({ platform: z.string(), url: z.string().url() }))
     .optional(),
 });
+
+export const forgetPasswordSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+// We no longer need uid/token in the POST body—those come in req.query
+export const resetPasswordSchema = z.object({
+  newPassword: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters long" })
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_\-+={}[\]|\\:;"'<>,.?/~`]).+$/,
+      {
+        message:
+          "Password must include uppercase, lowercase, number, and special character",
+      }
+    ),
+});

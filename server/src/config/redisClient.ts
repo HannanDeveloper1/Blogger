@@ -15,7 +15,7 @@ client.on("error", (err) => console.error("Redis Client Error", err));
 client
   .connect()
   .then(() => {
-    console.log("Connected to Redis");
+    console.log("✅ Connected to Redis");
   })
   .catch((err) => {
     console.error("Failed to connect to Redis due to:", err.message);

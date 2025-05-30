@@ -12,6 +12,11 @@ const env = z
     REDIS_URL: z.string(),
     ACCESS_TOKEN_EXP_MINS: z.string().default("15"),
     REFRESH_TOKEN_EXP_DAYS: z.string().default("30"),
+    SMTP_HOST: z.string(),
+    SMTP_PORT: z.string(),
+    SMTP_USER: z.string(),
+    SMTP_PASS: z.string(),
+    EMAIL_FROM: z.string(),
   })
   .parse(process.env);
 export default env;

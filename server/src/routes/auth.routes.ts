@@ -1,7 +1,12 @@
 import { Router } from "express";
 import validateBody from "../middlewares/validate.middleware";
-import { loginSchema, registerSchema } from "../schemas/validation.schemas";
 import {
+  forgetPasswordSchema,
+  loginSchema,
+  registerSchema,
+} from "../schemas/auth.schemas";
+import {
+  forgetPassword,
   loginUser,
   refreshToken,
   registerUser,
@@ -38,5 +43,12 @@ const refreshLimiter = rateLimiter({
   message: "Too many session refreshes, please re-login.",
 });
 router.put("/refresh-token", refreshLimiter, refreshToken);
+
+// Forget & reset password - routes
+router.post(
+  "/forget-password",
+  validateBody(forgetPasswordSchema),
+  forgetPassword
+);
 
 export default router;

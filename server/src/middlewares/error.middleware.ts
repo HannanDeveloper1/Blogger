@@ -11,6 +11,7 @@ const errorMiddleware = (
   err.statusCode = err.statusCode || 500;
 
   console.log(
+    "❌",
     "Error:",
     err.message,
     "Status:",

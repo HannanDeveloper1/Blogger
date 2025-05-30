@@ -3,6 +3,9 @@ import asyncHandler from "../middlewares/asyncHandler.middleware";
 import hashPassword from "../utils/hashPassword";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
+import path from "path";
+import ejs from "ejs";
+
 import {
   generateAccessToken,
   issueRefreshToken,
@@ -11,6 +14,10 @@ import {
 } from "../utils/tokens";
 import env from "../config/env";
 import bcrypt from "bcrypt";
+import { sendMail } from "../utils/mailer";
+
+const logoURL =
+  "https://6g1otobb4c.ufs.sh/f/vAg46GzfkdIUSQHkJjw605Z8BcGjzxDL2fYspTIFeutdJw1k";
 
 // User registration and login controllers
 export const registerUser = asyncHandler(
@@ -108,5 +115,48 @@ export const refreshToken = asyncHandler(
         success: true,
         accessToken,
       });
+  }
+);
+
+export const forgetPassword = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { email } = req.body;
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return next(new ErrorHandler("No Account found with this email!", 404));
+    }
+
+    const nonce = await issueRefreshToken(user.id);
+
+    const resetUrl = `${env.CLIENT_ORIGIN}/reset-password?uid=${user.id}&token=${nonce}`;
+    const templatePath = path.join(
+      __dirname,
+      "../templates/reset-password.ejs"
+    );
+
+    const html = await ejs.renderFile(templatePath, {
+      name: user.name,
+      logoURL,
+      clientOrigin: env.CLIENT_ORIGIN,
+      resetUrl,
+      headers: {
+        "X-Priority": "1 (Highest)",
+        "X-MSMail-Priority": "High",
+        Importance: "High",
+        Precedence: "bulk", // signals a system-generated mail
+      },
+    });
+    await sendMail({
+      to: user.email,
+      subject: "Reset your password",
+      html,
+      text: `Reset your password: ${resetUrl}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Password reset link sent to your email",
+    });
   }
 );
