@@ -17,6 +17,8 @@ import {
 import env from "../config/env";
 import bcrypt from "bcrypt";
 import { sendMail } from "../utils/mailer";
+import { UAParser } from "ua-parser-js";
+import geoip from "geoip-lite";
 
 const logoURL =
   "https://6g1otobb4c.ufs.sh/f/vAg46GzfkdIUSQHkJjw605Z8BcGjzxDL2fYspTIFeutdJw1k";
@@ -52,6 +54,24 @@ export const registerUser = asyncHandler(
         success: true,
         accessToken,
       });
+
+    const verifyLink = `${env.CLIENT_ORIGIN}/verify-email`;
+    const templatePath = path.join(__dirname, "../templates/welcome.ejs");
+
+    const html = await ejs.renderFile(templatePath, {
+      name: user.name,
+      logoURL,
+      clientOrigin: env.CLIENT_ORIGIN,
+      verifyLink,
+    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user.email,
+        subject: "Welcome to Blogger!",
+        html,
+        text: `Welcome to Blogger, ${user.name}! Please verify your email by visiting: ${verifyLink}`,
+      });
+    }, 5000);
   }
 );
 
@@ -87,6 +107,53 @@ export const loginUser = asyncHandler(
         success: true,
         accessToken,
       });
+
+    // 2) Gather login context:
+    const loginTime = new Date().toLocaleString("en-US", {
+      timeZone: "UTC",
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    const forwardedFor = req.headers["x-forwarded-for"] as string | undefined;
+    const loginIP = forwardedFor ? forwardedFor.split(",")[0].trim() : req.ip;
+
+    // Geo‐locate IP (city, region)
+    const geo = geoip.lookup(loginIP as string) || {
+      city: "Unknown",
+      region: "Unknown",
+    };
+    const loginLocation = `${geo.city}, ${geo.region}`;
+
+    // Parse user‐agent
+    const ua = new UAParser(req.headers["user-agent"]);
+    const uaResult = ua.getResult();
+    const loginDevice = `${uaResult.browser.name} on ${uaResult.os.name}`;
+
+    // Sending alert
+    const templatePath = path.join(__dirname, "../templates/login-alert.ejs");
+
+    const html = await ejs.renderFile(templatePath, {
+      name: user.name,
+      logoURL,
+      clientOrigin: env.CLIENT_ORIGIN,
+      loginTime,
+      loginLocation,
+      loginDevice,
+      loginIP,
+    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user.email,
+        subject: "New Login Detected",
+        html,
+        text: `New login detected on your account at ${loginTime} from ${loginLocation} using ${loginDevice}. If this wasn't you, please secure your account immediately.`,
+      });
+    }, 3000);
   }
 );
 
@@ -149,17 +216,18 @@ export const forgetPassword = asyncHandler(
         Precedence: "bulk", // signals a system-generated mail
       },
     });
-    await sendMail({
-      to: user.email,
-      subject: "Reset your password",
-      html,
-      text: `Reset your password: ${resetUrl}`,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: "Password reset link sent to your email",
-    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user.email,
+        subject: "Reset your password",
+        html,
+        text: `Reset your password: ${resetUrl}`,
+      });
+      res.status(200).json({
+        success: true,
+        message: "Password reset link sent to your email",
+      });
+    }, 1000);
   }
 );
 
@@ -182,7 +250,7 @@ export const resetPassword = asyncHandler(
 
     res.status(200).json({
       success: true,
-      message: "Password has been reset successfully",
+      message: "Password has been changed successfully",
     });
 
     const supportUrl = `${env.CLIENT_ORIGIN}/support/account`;
@@ -203,11 +271,13 @@ export const resetPassword = asyncHandler(
         Precedence: "bulk", // signals a system-generated mail
       },
     });
-    await sendMail({
-      to: user.email,
-      subject: "Password Updated Successfully",
-      html,
-      text: `Your password has been updated successfully. If you did not request this change, please contact support at ${supportUrl}`,
-    });
+    setTimeout(async () => {
+      await sendMail({
+        to: user.email,
+        subject: "Password Updated Successfully",
+        html,
+        text: `Your password has been updated successfully. If you did not request this change, please contact support at ${supportUrl}`,
+      });
+    }, 2000);
   }
 );
