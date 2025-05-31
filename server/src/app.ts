@@ -6,22 +6,27 @@ import morgan from "morgan";
 import env from "./config/env";
 import errorMiddleware from "./middlewares/error.middleware";
 import logger from "./utils/logger";
-import ErrorHandler from "./utils/errorHandler";
+import csurf from "csurf";
+import authRoutes from "./routes/auth.routes";
+import forceHttps from "./middlewares/forceHTTPS.middleware";
 
 const app = express();
-
-app.use(morgan("dev"));
+const csrfProtection = csurf({
+  cookie: true, // Enable CSRF protection with cookies
+});
 
 // Middleware setup
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: false, limit: "10kb" }));
 app.use(
   cors({
-    origin: env.CLIENT_ORIGIN || "http://localhost:3000",
+    origin: env.CLIENT_ORIGIN,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     credentials: true, // Allow cookies to be sent with requests
   })
 );
 app.use(cookieParser());
+app.use(morgan("dev"));
 app.use(helmet()); // Security middleware to set various HTTP headers
 app.use(
   morgan("combined", {
@@ -30,15 +35,12 @@ app.use(
     },
   })
 );
+// app.use(csrfProtection); // CSRF protection middleware disabled for now
 
-app.get("/", (req, res) => {
-  res.send("Welcome to the Blogger API!");
-});
-
-app.get("/error", (req, res, next) => {
-  next(new ErrorHandler("This is a test error!", 500));
-});
+// Routes
+app.use("/api/auth", authRoutes);
 
 app.use(errorMiddleware); // Error handling middleware
+// app.use(forceHttps);
 
 export default app;

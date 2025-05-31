@@ -11,11 +11,14 @@ datasource db {
 model User {
   id            String        @id @default(cuid())
   email         String        @unique
-  username      String        @unique
+  username      String?        @unique
   avatar        String?
-  name          String?
+  name          String
   password      String?
   about         String?
+  location     String?
+  website       String?
+  socialLinks   SocialLink[]         // JSON object for social media links
   onboarding    Boolean       @default(false)
   comments      Comment[]
   likes         Like[]
@@ -109,6 +112,19 @@ model Tag {
   posts PostTag[]
 
   @@map("tags")
+}
+
+model SocialLink {
+  id        String   @id @default(cuid())
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  platform  String   // e.g., 'twitter', 'github', 'linkedin'
+  url       String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, platform]) // Prevent duplicate social links for the same platform
+  @@map("social_links")
 }
 
 model PostTag {

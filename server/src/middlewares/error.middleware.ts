@@ -11,6 +11,7 @@ const errorMiddleware = (
   err.statusCode = err.statusCode || 500;
 
   console.log(
+    "❌",
     "Error:",
     err.message,
     "Status:",
@@ -19,13 +20,23 @@ const errorMiddleware = (
     err.stack
   );
 
+  if (err.code === "EBADCSRFTOKEN") {
+    logger.warn({
+      event: "csrf_failure",
+      ip: req.ip,
+      route: req.originalUrl,
+      message: "CSRF token invalid or missing",
+    });
+    res.status(403).json({ error: "Invalid CSRF token" });
+  }
+
   logger.error({
-    message: "HELLO",
-    statusCode: 500,
-    stack: "Error stack trace",
-    path: "Original URL",
-    method: "GET",
-    ip: "IP",
+    message: err.message,
+    statusCode: err.statusCode,
+    stack: err.stack,
+    path: req.originalUrl,
+    method: req.method,
+    ip: req.ip,
   });
   res.status(err.statusCode).json({
     success: false,

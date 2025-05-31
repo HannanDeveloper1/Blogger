@@ -7,6 +7,16 @@ const env = z
       .default("development"),
     PORT: z.string().default("8081"),
     CLIENT_ORIGIN: z.string(),
+    DATABASE_URL: z.string(),
+    JWT_SECRET: z.string(),
+    REDIS_URL: z.string(),
+    ACCESS_TOKEN_EXP: z.string().default("15Minutes"),
+    REFRESH_TOKEN_EXP_DAYS: z.string(),
+    SMTP_HOST: z.string(),
+    SMTP_PORT: z.string(),
+    SMTP_USER: z.string(),
+    SMTP_PASS: z.string(),
+    EMAIL_FROM: z.string(),
   })
   .parse(process.env);
 export default env;

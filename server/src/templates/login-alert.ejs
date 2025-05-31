@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>New Login Detected</title>
+  </head>
+  <body style="margin: 0; padding-top: 1rem; background-color: #f4f2f6">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center">
+          <table
+            role="presentation"
+            cellpadding="0"
+            cellspacing="0"
+            width="100%"
+            style="
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: #ffffff;
+              border-radius: calc(0.5rem - 2px);
+              overflow: hidden;
+            "
+          >
+            <tr>
+              <td
+                align="center"
+                style="padding-top: 2rem; background-color: #ffffff"
+              >
+                <a class="logo" href="<%= clientOrigin %>" target="_blank">
+                  <img
+                    src="<%= logoURL %>"
+                    alt="Blogger"
+                    width="200"
+                    style="
+                      display: block;
+                      border: none;
+                      outline: none;
+                      text-decoration: none;
+                    "
+                  />
+                </a>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="
+                  padding: 30px;
+                  font-family: Arial, sans-serif;
+                  color: #333333;
+                  line-height: 1.5;
+                "
+              >
+                <h1
+                  style="
+                    margin: 0 0 16px;
+                    font-size: 24px;
+                    color: #333333;
+                    text-align: center;
+                  "
+                >
+                  New Login to Your Account
+                </h1>
+                <p style="margin: 0 0 16px">
+                  Hello <strong><%= name %></strong>,
+                </p>
+                <p style="margin: 0 0 24px">
+                  We noticed a login to your account with the following details:
+                </p>
+                <table
+                  cellpadding="0"
+                  cellspacing="0"
+                  style="width: 100%; margin: 20px 0; font-size: 16px"
+                >
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <strong>Time:</strong>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <%= loginTime %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <strong>Location:</strong>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <%= loginLocation %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <strong>Device:</strong>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <%= loginDevice %>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <strong>IP Address:</strong>
+                    </td>
+                    <td style="padding: 8px; border: 1px solid #ddd">
+                      <%= loginIP %>
+                    </td>
+                  </tr>
+                </table>
+                <p style="line-height: 1.5">
+                  If this was you, no action is needed. If you did not log in,
+                  please immediately change your password to secure your
+                  account.
+                </p>
+                <p style="margin: 0 0 16px">
+                  If you have any questions, feel free to contact our support
+                  team.
+                </p>
+                <p style="margin: 0">
+                  Thanks,<br />
+                  <strong>The Blogger Team</strong>
+                </p>
+              </td>
+            </tr>
+
+            <tr>
+              <td
+                style="
+                  padding: 20px;
+                  background-color: #f2f4f6;
+                  font-family: Arial, sans-serif;
+                  font-size: 12px;
+                  text-align: center;
+                  color: #888888;
+                "
+              >
+                <p style="margin: 0 0 8px">
+                  &copy; 2025 <strong>Blogger</strong>. All Rights Reserved.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
