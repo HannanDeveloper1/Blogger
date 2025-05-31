@@ -50,13 +50,17 @@ enum PostStatus {
   published
   archived
 }
-
+enum Visibility {
+  public
+  private
+}
 model Post {
   id        String     @id @default(cuid())
   title     String
   content   String?
   htmlCache String?
   authorId  String
+  visibility  Visibility
   status    PostStatus @default(draft) // 'draft' | 'published' | 'archived'
   author    User       @relation(fields: [authorId], references: [id])
   comments  Comment[]
