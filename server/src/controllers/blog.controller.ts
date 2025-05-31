@@ -26,14 +26,30 @@ const DEFAULT_HTML_SANITIZE_OPTIONS = {
 export const createBlog = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = (req as any).user.id;
-    const data = req.body;
+    const {
+      thumbnail,
+      title,
+      description,
+      content,
+      status,
+      visibility,
+      tags, // array of string tag names
+    } = req.body as {
+      thumbnail: string;
+      title: string;
+      description?: string;
+      content: string;
+      status: "draft" | "published";
+      visibility: "private" | "public";
+      tags: string[];
+    };
 
-    let post = await prisma.blog.findUnique({
-      where: { title: data.title },
+    // Check for unique title
+    const existing = await prisma.blog.findUnique({
+      where: { title },
     });
-
-    if (post) {
-      next(
+    if (existing) {
+      return next(
         new ErrorHandler(
           "A blog post with this title already exists. Please choose a unique title.",
           400
@@ -41,20 +57,56 @@ export const createBlog = asyncHandler(
       );
     }
 
-    const rawHtml = await marked(data.content);
-    const safeHtml = sanitizeHtml(rawHtml, DEFAULT_HTML_SANITIZE_OPTIONS);
+    // Convert Markdown → HTML, then sanitize
+    const rawHtml = marked(content);
+    const safeHtml = sanitizeHtml(
+      rawHtml as string,
+      DEFAULT_HTML_SANITIZE_OPTIONS
+    );
 
-    await prisma.blog.create({
+    // Build nested create list for tags (through BlogTag)
+    //    Each entry will create a BlogTag that connects to a Tag (connectOrCreate).
+    const tagCreates = tags.map((tagName: string) => ({
+      tag: {
+        connectOrCreate: {
+          where: { name: tagName },
+          create: { name: tagName },
+        },
+      },
+    }));
+
+    // Creating the blog
+    const blog = await prisma.blog.create({
       data: {
-        author: { connect: { id: userId } },
+        thumbnail,
+        title,
+        description,
+        content,
         htmlCache: safeHtml,
-        ...data,
+        status,
+        visibility,
+        author: {
+          connect: { id: userId },
+        },
+        tags: {
+          create: tagCreates,
+        },
+      },
+      include: {
+        tags: {
+          include: { tag: true },
+        },
       },
     });
 
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: "Post created",
+      data: {
+        id: blog.id,
+        title: blog.title,
+        tags: blog.tags.map((bt) => bt.tag.name),
+      },
     });
   }
 );
@@ -64,11 +116,14 @@ export const getBlogs = asyncHandler(
     const { page, limit, sort } = req.query as unknown as {
       page: number;
       limit: number;
-      sort: "asc" | "desc";
+      sort?: "asc" | "desc";
     };
 
+    // Enforce maximum limit
     const take = Math.min(limit, 50);
     const skip = (page - 1) * take;
+
+    const orderDirection = sort === "asc" ? "asc" : "desc";
 
     const [totalCount, rawPosts] = await Promise.all([
       prisma.blog.count({
@@ -80,7 +135,7 @@ export const getBlogs = asyncHandler(
         take,
         orderBy: [
           {
-            createdAt: sort,
+            createdAt: orderDirection,
           },
         ],
         select: {

@@ -13,6 +13,7 @@ export const createBlogSchema = z.object({
   content: z.string().min(1, "Content is required"),
   status: z.enum(["draft", "published"]).default("draft"),
   visibility: z.enum(["private", "public"]).default("public"),
+  tags: z.array(z.string()),
 });
 
 export const updateBlogSchema = z.object({
