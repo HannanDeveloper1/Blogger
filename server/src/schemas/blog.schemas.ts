@@ -38,7 +38,11 @@ export const paginationSchema = z.object({
     .regex(/^[1-9]\d*$/, "Limit must be a positive integer")
     .transform(Number)
     .default("10"),
-  status: z
-    .enum(["draft", "published", "archived", "all"])
-    .default("published"),
+  sort: z
+    .enum([
+      "desc", // descending by creation date
+      "asc", // ascending by creation date
+    ])
+    .default("desc")
+    .optional(),
 });

@@ -4,6 +4,7 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
+import {} from "../generated/prisma";
 
 const DEFAULT_HTML_SANITIZE_OPTIONS = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat([
@@ -54,6 +55,69 @@ export const createBlog = asyncHandler(
     res.status(201).json({
       success: true,
       message: "Post created",
+    });
+  }
+);
+
+export const getBlogs = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { page, limit, sort } = req.query as unknown as {
+      page: number;
+      limit: number;
+      sort: "asc" | "desc";
+    };
+
+    const take = Math.min(limit, 50);
+    const skip = (page - 1) * take;
+
+    const [totalCount, rawPosts] = await Promise.all([
+      prisma.blog.count({
+        where: { status: "published", visibility: "public" },
+      }),
+      prisma.blog.findMany({
+        where: { status: "published", visibility: "public" },
+        skip,
+        take,
+        orderBy: [
+          {
+            createdAt: sort,
+          },
+        ],
+        select: {
+          id: true,
+          thumbnail: true,
+          title: true,
+          description: true,
+          htmlCache: true,
+          visibility: true,
+          authorId: true,
+          createdAt: true,
+          updatedAt: true,
+          likes: true,
+        },
+      }),
+    ]);
+    const posts = rawPosts.map((p) => ({
+      id: p.id,
+      thumbnail: p.thumbnail,
+      title: p.title,
+      description: p.description,
+      html: p.htmlCache,
+      visibility: p.visibility,
+      authorId: p.authorId,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      likesCount: p.likes.length,
+    }));
+
+    return res.json({
+      data: posts,
+      meta: {
+        total: totalCount,
+        page,
+        limit: take,
+        pages: Math.ceil(totalCount / take),
+      },
     });
   }
 );

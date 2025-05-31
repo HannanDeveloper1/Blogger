@@ -6,11 +6,12 @@ export default function validateQuery<T extends ZodTypeAny>(
   schema: T
 ): RequestHandler {
   return (req: Request, res: Response, next: NextFunction) => {
+    console.log(req.query);
     const result = schema.safeParse(req.query);
     if (!result.success) {
       return next(new ErrorHandler(result.error.errors[0].message, 400));
     }
-    req.query = result.data as any;
+    Object.assign(req.query, result.data);
     next();
   };
 }
