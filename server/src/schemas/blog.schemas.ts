@@ -1,18 +1,28 @@
 import { z } from "zod";
 
-export const createPostSchema = z.object({
+export const createBlogSchema = z.object({
+  thumbnail: z.string().url().min(1, "Please upload the thumbnail"),
   title: z
     .string()
     .min(1, "Title is required")
-    .max(200, "Title cannot exceed 200 characters"),
+    .max(100, "Title cannot exceed 100 characters"),
+  description: z
+    .string()
+    .max(250, "Description cannot exceed 250 characters")
+    .optional(),
   content: z.string().min(1, "Content is required"),
   status: z.enum(["draft", "published"]).default("draft"),
   visibility: z.enum(["private", "public"]).default("public"),
 });
 
-export const updatePostSchema = z.object({
-  title: z.string().min(1, "Title is required").max(200).optional(),
-  content: z.string().min(1, "Content is required").optional(),
+export const updateBlogSchema = z.object({
+  thumbnail: z.string().url().optional(),
+  description: z
+    .string()
+    .max(250, "Description cannot exceed 250 characters")
+    .optional(),
+  title: z.string().max(200).optional(),
+  content: z.string().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
   visibility: z.enum(["private", "public"]).default("public").optional(),
 });

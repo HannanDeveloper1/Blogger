@@ -16,7 +16,7 @@ import {
   verifyEmail,
 } from "../controllers/auth.controllers";
 import rateLimiter from "../utils/rateLimiter";
-import authGuard from "../middlewares/authGuard";
+import authGuard from "../middlewares/authGuard.middleware";
 
 const router = Router();
 

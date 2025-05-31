@@ -4,11 +4,15 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import morgan from "morgan";
 import env from "./config/env";
-import errorMiddleware from "./middlewares/error.middleware";
-import logger from "./utils/logger";
 import csurf from "csurf";
+
+import logger from "./utils/logger";
+
 import authRoutes from "./routes/auth.routes";
+import blogRoutes from "./routes/blog.routes";
+
 import forceHttps from "./middlewares/forceHTTPS.middleware";
+import errorMiddleware from "./middlewares/error.middleware";
 
 const app = express();
 const csrfProtection = csurf({
@@ -16,6 +20,7 @@ const csrfProtection = csurf({
 });
 
 // Middleware setup
+app.set("trust proxy", 1);
 app.use(express.json({ limit: "10kb" }));
 app.use(express.urlencoded({ extended: false, limit: "10kb" }));
 app.use(
@@ -39,6 +44,7 @@ app.use(
 
 // Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/blog", blogRoutes);
 
 app.use(errorMiddleware); // Error handling middleware
 // app.use(forceHttps);
