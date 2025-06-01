@@ -13,6 +13,7 @@ import blogRoutes from "./routes/blog.routes";
 
 import forceHttps from "./middlewares/forceHTTPS.middleware";
 import errorMiddleware from "./middlewares/error.middleware";
+import profileRouter from "./routes/profile.routes";
 
 const app = express();
 const csrfProtection = csurf({
@@ -45,6 +46,7 @@ app.use(
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/blog", blogRoutes);
+app.use("/api/account", profileRouter);
 
 app.use(errorMiddleware); // Error handling middleware
 // app.use(forceHttps);

@@ -15,7 +15,7 @@ import {
   getSingleBlog,
   getUserBlogs,
   updateBlog,
-} from "../controllers/blog.controller";
+} from "../controllers/blog.controllers";
 import validateBody from "../middlewares/validate.middleware";
 import validateQuery from "../middlewares/validateQuery.middleware";
 import validateParams from "../middlewares/validateParams.middleware";
