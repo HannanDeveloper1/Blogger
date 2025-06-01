@@ -13,7 +13,7 @@ export const createBlogSchema = z.object({
   content: z.string().min(1, "Content is required"),
   status: z.enum(["draft", "published"]).default("draft"),
   visibility: z.enum(["private", "public"]).default("public"),
-  tags: z.array(z.string()),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 export const updateBlogSchema = z.object({
@@ -26,6 +26,7 @@ export const updateBlogSchema = z.object({
   content: z.string().optional(),
   status: z.enum(["draft", "published", "archived"]).optional(),
   visibility: z.enum(["private", "public"]).default("public").optional(),
+  tags: z.array(z.string()).optional().default([]),
 });
 
 export const paginationSchema = z.object({

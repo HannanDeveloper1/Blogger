@@ -5,11 +5,13 @@ import {
   createBlogSchema,
   paginationSchema,
   singleBlogSchema,
+  updateBlogSchema,
 } from "../schemas/blog.schemas";
 import {
   createBlog,
   getBlogs,
   getSingleBlog,
+  updateBlog,
 } from "../controllers/blog.controller";
 import validateBody from "../middlewares/validate.middleware";
 import validateQuery from "../middlewares/validateQuery.middleware";
@@ -35,6 +37,15 @@ router.get(
   authenticateOptionalMiddleware,
   validateParams(singleBlogSchema),
   getSingleBlog
+);
+
+router.put(
+  "/:id",
+  authGuard,
+  authenticateMiddleware,
+  validateParams(singleBlogSchema),
+  validateBody(updateBlogSchema),
+  updateBlog
 );
 
 export default router;

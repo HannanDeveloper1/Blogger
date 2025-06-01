@@ -4,6 +4,7 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
+import { Blog } from "../generated/prisma";
 
 const DEFAULT_HTML_SANITIZE_OPTIONS = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat([
@@ -207,7 +208,7 @@ export const getSingleBlog = asyncHandler(
       !(blog.status === "published" && blog.visibility === "public") &&
       (!currentUser || currentUser.id !== blog.authorId)
     ) {
-      return next(new ErrorHandler("Cannot view this blog", 403));
+      return next(new ErrorHandler("You cannot view this blog", 403));
     }
 
     const tags = blog.tags.map((bt) => bt.tag.name);
@@ -227,6 +228,128 @@ export const getSingleBlog = asyncHandler(
       comments: blog.comments,
       createdAt: blog.createdAt,
       updatedAt: blog.updatedAt,
+    });
+  }
+);
+
+export const updateBlog = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const blogId = req.params.id;
+    const currentUser = (req as any).user as { id: string };
+
+    const existing = await prisma.blog.findUnique({
+      where: { id: blogId },
+      include: {
+        tags: {
+          include: { tag: true },
+        },
+      },
+    });
+
+    if (!existing) {
+      return next(new ErrorHandler("Blog not found", 404));
+    }
+
+    if (existing.authorId !== currentUser.id) {
+      return next(new ErrorHandler("You cannot update this blog", 403));
+    }
+
+    // Destructure incoming fields (all are optional in update schema)
+    const {
+      thumbnail,
+      title,
+      description,
+      content,
+      status,
+      visibility,
+      tags, // string[] or undefined
+    } = req.body as {
+      thumbnail?: string;
+      title?: string;
+      description?: string;
+      content?: string;
+      status?: "draft" | "published" | "archived";
+      visibility?: "private" | "public";
+      tags?: string[];
+    };
+
+    // Build an object for fields to update
+    const dataToUpdate: any = {};
+
+    if (thumbnail !== undefined) dataToUpdate.thumbnail = thumbnail;
+    if (title !== undefined) dataToUpdate.title = title;
+    if (description !== undefined) dataToUpdate.description = description;
+    if (status !== undefined) dataToUpdate.status = status;
+    if (visibility !== undefined) dataToUpdate.visibility = visibility;
+
+    // If content changed, re-render HTML and sanitize
+    if (content !== undefined) {
+      const rawHtml = await marked(content);
+      const safeHtml = sanitizeHtml(rawHtml, DEFAULT_HTML_SANITIZE_OPTIONS);
+      dataToUpdate.content = rawHtml;
+      dataToUpdate.htmlCache = safeHtml;
+    }
+
+    // If tags array is provided, synchronize them:
+    //    - Delete all existing BlogTag entries for this blog
+    //    - Create new BlogTag entries for each tagName (connectOrCreate Tag)
+
+    let tagSync: { deleteMany: { blogId: string }; create: any[] } | undefined;
+
+    if (Array.isArray(tags)) {
+      const tagCreates = tags.map((tag: string) => ({
+        tag: {
+          connectOrCreate: {
+            where: { name: tag },
+            create: { name: tag },
+          },
+        },
+      }));
+
+      tagSync = {
+        deleteMany: { blogId },
+        create: tagCreates,
+      };
+    }
+
+    // Performing the update
+    const updated = await prisma.blog.update({
+      where: { id: blogId },
+      data: {
+        ...dataToUpdate,
+        ...(tagSync
+          ? {
+              tags: {
+                deleteMany: tagSync.deleteMany,
+                create: tagSync.create,
+              },
+            }
+          : {}),
+      },
+      include: {
+        tags: { include: { tag: true } },
+        likes: true,
+        comments: true,
+      },
+    });
+
+    return res.json({
+      success: true,
+      message: "Blog updated",
+      data: {
+        id: updated.id,
+        thumbnail: updated.thumbnail,
+        title: updated.title,
+        description: updated.description,
+        content: updated.content,
+        html: updated.htmlCache,
+        status: updated.status,
+        visibility: updated.visibility,
+        authorId: updated.authorId,
+        tags: updated.tags.map((bt) => bt.tag.name),
+        createdAt: updated.createdAt,
+        updatedAt: updated.updatedAt,
+      },
     });
   }
 );
