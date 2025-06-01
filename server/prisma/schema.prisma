@@ -16,7 +16,8 @@ model User {
   name          String
   password      String?
   about         String?
-  location      String?
+  phone         String?
+  location      Json?
   website       String?
   socialLinks   SocialLink[] // JSON object for social media links
   onboarding    Boolean       @default(false)
@@ -54,6 +55,17 @@ enum BlogStatus {
 enum Visibility {
   public
   private
+}
+
+enum SocialPlatform {
+  x
+  github
+  linkedin
+  facebook
+  instagram
+  youtube
+  tiktok
+  other
 }
 
 model Blog {
@@ -126,13 +138,13 @@ model Tag {
 }
 
 model SocialLink {
-  id        String   @id @default(cuid())
-  user      User     @relation(fields: [userId], references: [id])
+  id        String         @id @default(cuid())
+  user      User           @relation(fields: [userId], references: [id])
   userId    String
-  platform  String // e.g., 'twitter', 'github', 'linkedin'
+  platform  SocialPlatform // e.g., 'twitter', 'github', 'linkedin'
   url       String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@unique([userId, platform]) // Prevent duplicate social links for the same platform
   @@map("social_links")
