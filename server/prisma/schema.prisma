@@ -11,14 +11,14 @@ datasource db {
 model User {
   id            String        @id @default(cuid())
   email         String        @unique
-  username      String?        @unique
+  username      String?       @unique
   avatar        String?
   name          String
   password      String?
   about         String?
-  location     String?
+  location      String?
   website       String?
-  socialLinks   SocialLink[]         // JSON object for social media links
+  socialLinks   SocialLink[] // JSON object for social media links
   onboarding    Boolean       @default(false)
   comments      Comment[]
   likes         Like[]
@@ -29,7 +29,7 @@ model User {
   role          Role          @default(user) // 'user' | 'admin'
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
-  Post          Post[]
+  Blog          Blog[]
 
   @@map("users")
 }
@@ -45,34 +45,45 @@ enum AccountStatus {
   deleted
 }
 
-enum PostStatus {
+enum BlogStatus {
   draft
   published
   archived
 }
 
-model Post {
-  id        String     @id @default(cuid())
-  title     String
-  content   String?
-  authorId  String
-  status    PostStatus @default(draft) // 'draft' | 'published' | 'archived'
-  author    User       @relation(fields: [authorId], references: [id])
-  comments  Comment[]
-  likes     Like[]
-  tags      PostTag[]
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+enum Visibility {
+  public
+  private
+}
 
-  @@map("posts")
+model Blog {
+  id          String     @id @default(cuid())
+  thumbnail   String
+  description String?
+  title       String     @unique
+  content     String
+  htmlCache   String?
+  authorId    String
+  visibility  Visibility
+  status      BlogStatus @default(draft) // 'draft' | 'published' | 'archived'
+  author      User       @relation(fields: [authorId], references: [id])
+  comments    Comment[]
+  likes       Like[]
+  tags        BlogTag[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([authorId])
+  @@index([status])
+  @@map("blogs")
 }
 
 // comment object type
 
 model Comment {
   id        String   @id @default(cuid())
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
+  blog      Blog     @relation(fields: [blogId], references: [id])
+  blogId    String
   author    User     @relation(fields: [authorId], references: [id])
   authorId  String
   content   String
@@ -86,11 +97,11 @@ model Like {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  post      Post     @relation(fields: [postId], references: [id])
-  postId    String
+  blog      Blog     @relation(fields: [blogId], references: [id])
+  blogId    String
   createdAt DateTime @default(now())
 
-  @@unique([userId, postId]) // Prevent duplicate likes
+  @@unique([userId, blogId]) // Prevent duplicate likes
   @@map("likes")
 }
 
@@ -109,7 +120,7 @@ model Follow {
 model Tag {
   id    String    @id @default(cuid())
   name  String    @unique
-  posts PostTag[]
+  blogs BlogTag[]
 
   @@map("tags")
 }
@@ -118,7 +129,7 @@ model SocialLink {
   id        String   @id @default(cuid())
   user      User     @relation(fields: [userId], references: [id])
   userId    String
-  platform  String   // e.g., 'twitter', 'github', 'linkedin'
+  platform  String // e.g., 'twitter', 'github', 'linkedin'
   url       String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -127,12 +138,12 @@ model SocialLink {
   @@map("social_links")
 }
 
-model PostTag {
-  post   Post   @relation(fields: [postId], references: [id])
-  postId String
+model BlogTag {
+  blog   Blog   @relation(fields: [blogId], references: [id])
+  blogId String
   tag    Tag    @relation(fields: [tagId], references: [id])
   tagId  String
 
-  @@id([postId, tagId])
-  @@map("post_tags")
+  @@id([blogId, tagId])
+  @@map("blog_tags")
 }

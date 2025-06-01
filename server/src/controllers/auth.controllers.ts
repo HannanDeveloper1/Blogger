@@ -2,14 +2,6 @@ import { NextFunction, Request, Response } from "express";
 import asyncHandler from "../middlewares/asyncHandler.middleware";
 import hashPassword from "../utils/hashPassword";
 
-// Extend Express Request type to include 'user'
-declare global {
-  namespace Express {
-    interface Request {
-      user?: { id: string; [key: string]: any };
-    }
-  }
-}
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
 import path from "path";
