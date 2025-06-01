@@ -4,7 +4,6 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
-import { Blog } from "../generated/prisma";
 
 const DEFAULT_HTML_SANITIZE_OPTIONS = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat([
@@ -101,7 +100,7 @@ export const createBlog = asyncHandler(
 
     return res.status(201).json({
       success: true,
-      message: "Post created",
+      message: "Blog created",
       data: {
         id: blog.id,
         title: blog.title,
@@ -129,7 +128,7 @@ export const getBlogs = asyncHandler(
 
     const orderDirection = sort === "asc" ? "asc" : "desc";
 
-    const [totalCount, rawPosts] = await Promise.all([
+    const [totalCount, rawBlogs] = await Promise.all([
       prisma.blog.count({
         where: { status: "published", visibility: "public" },
       }),
@@ -156,7 +155,7 @@ export const getBlogs = asyncHandler(
         },
       }),
     ]);
-    const posts = rawPosts.map((p) => ({
+    const blogs = rawBlogs.map((p) => ({
       id: p.id,
       thumbnail: p.thumbnail,
       title: p.title,
@@ -170,7 +169,7 @@ export const getBlogs = asyncHandler(
     }));
 
     return res.json({
-      data: posts,
+      data: blogs,
       meta: {
         total: totalCount,
         page,
@@ -349,6 +348,118 @@ export const updateBlog = asyncHandler(
         tags: updated.tags.map((bt) => bt.tag.name),
         createdAt: updated.createdAt,
         updatedAt: updated.updatedAt,
+      },
+    });
+  }
+);
+
+export const deleteBlog = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const blogId = req.params.id;
+    const currentUser = (req as any).user as { id: string };
+
+    const existing = await prisma.blog.findUnique({
+      where: { id: blogId },
+      select: { authorId: true },
+    });
+
+    if (!existing) {
+      return next(new ErrorHandler("Blog not found", 404));
+    }
+
+    if (existing.authorId !== currentUser.id) {
+      return next(new ErrorHandler("You cannot delete this blog", 403));
+    }
+
+    await prisma.blog.delete({
+      where: { id: blogId },
+    });
+
+    res.status(204).json({});
+  }
+);
+
+export const getUserBlogs = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const currentUser = req.user as { id: string } | undefined;
+    console.log(currentUser);
+    const {
+      page = 1,
+      limit = 10,
+      sort = "desc",
+      status = "published",
+      visibility = "all",
+    } = req.query as unknown as {
+      page: number;
+      limit: number;
+      sort: "asc" | "desc";
+      status: "draft" | "published" | "archived";
+      visibility: "all" | "public" | "private";
+    };
+
+    // Enforce maximum limit
+    const take = Math.min(limit, 50);
+    const skip = (page - 1) * take;
+
+    const orderDirection = sort === "asc" ? "asc" : "desc";
+
+    const [totalCount, rawBlogs] = await Promise.all([
+      prisma.blog.count({
+        where: { authorId: currentUser?.id },
+      }),
+      prisma.blog.findMany({
+        where: {
+          status,
+          visibility: visibility !== "all" ? visibility : undefined,
+          authorId: currentUser?.id,
+        },
+        skip,
+        take,
+        orderBy: [
+          {
+            createdAt: orderDirection,
+          },
+        ],
+        select: {
+          id: true,
+          thumbnail: true,
+          title: true,
+          description: true,
+          htmlCache: true,
+          visibility: true,
+          authorId: true,
+          createdAt: true,
+          updatedAt: true,
+          likes: true,
+        },
+      }),
+    ]);
+
+    if (!rawBlogs) {
+      return next(new ErrorHandler("Blogs not found", 404));
+    }
+
+    const blogs = rawBlogs.map((p) => ({
+      id: p.id,
+      thumbnail: p.thumbnail,
+      title: p.title,
+      description: p.description,
+      html: p.htmlCache,
+      visibility: p.visibility,
+      authorId: p.authorId,
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt,
+      likesCount: p.likes.length,
+    }));
+
+    return res.json({
+      success: true,
+      data: blogs,
+      meta: {
+        total: totalCount,
+        page,
+        limit: take,
+        pages: Math.ceil(totalCount / take),
       },
     });
   }
