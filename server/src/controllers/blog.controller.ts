@@ -4,7 +4,6 @@ import { marked } from "marked";
 import sanitizeHtml from "sanitize-html";
 import prisma from "../config/prisma";
 import ErrorHandler from "../utils/errorHandler";
-import {} from "../generated/prisma";
 
 const DEFAULT_HTML_SANITIZE_OPTIONS = {
   allowedTags: sanitizeHtml.defaults.allowedTags.concat([
@@ -113,7 +112,11 @@ export const createBlog = asyncHandler(
 
 export const getBlogs = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { page, limit, sort } = req.query as unknown as {
+    const {
+      page = 1,
+      limit = 10,
+      sort = "desc",
+    } = req.query as unknown as {
       page: number;
       limit: number;
       sort?: "asc" | "desc";
@@ -173,6 +176,57 @@ export const getBlogs = asyncHandler(
         limit: take,
         pages: Math.ceil(totalCount / take),
       },
+    });
+  }
+);
+
+export const getSingleBlog = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { id } = req.params;
+
+    const currentUser = req.user as { id: string } | undefined;
+
+    const blog = await prisma.blog.findUnique({
+      where: { id: id },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+        likes: true,
+        comments: true,
+      },
+    });
+
+    if (!blog) {
+      return next(new ErrorHandler("Blog not found", 404));
+    }
+
+    if (
+      !(blog.status === "published" && blog.visibility === "public") &&
+      (!currentUser || currentUser.id !== blog.authorId)
+    ) {
+      return next(new ErrorHandler("Cannot view this blog", 403));
+    }
+
+    const tags = blog.tags.map((bt) => bt.tag.name);
+
+    return res.json({
+      id: blog.id,
+      thumbnail: blog.thumbnail,
+      title: blog.title,
+      description: blog.description,
+      content: blog.content, // raw Markdown
+      html: blog.htmlCache, // sanitized HTML
+      visibility: blog.visibility,
+      status: blog.status,
+      authorId: blog.authorId,
+      tags,
+      likes: blog.likes,
+      comments: blog.comments,
+      createdAt: blog.createdAt,
+      updatedAt: blog.updatedAt,
     });
   }
 );

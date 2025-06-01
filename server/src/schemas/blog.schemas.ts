@@ -32,13 +32,15 @@ export const paginationSchema = z.object({
   page: z
     .string()
     .regex(/^[1-9]\d*$/, "Page must be a positive integer")
+    .default("1")
     .transform(Number)
-    .default("1"),
+    .optional(),
   limit: z
     .string()
     .regex(/^[1-9]\d*$/, "Limit must be a positive integer")
+    .default("10")
     .transform(Number)
-    .default("10"),
+    .optional(),
   sort: z
     .enum([
       "desc", // descending by creation date
@@ -46,4 +48,8 @@ export const paginationSchema = z.object({
     ])
     .default("desc")
     .optional(),
+});
+
+export const singleBlogSchema = z.object({
+  id: z.string().min(1, "Please enter the id"),
 });
