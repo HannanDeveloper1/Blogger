@@ -186,3 +186,15 @@ export const updatePassword = asyncHandler(
     });
   }
 );
+
+export const deleteMyAccount = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const currentUser = (req as any).user as { id: string };
+
+    await prisma.user.delete({
+      where: { id: currentUser.id },
+    });
+
+    return res.sendStatus(204);
+  }
+);

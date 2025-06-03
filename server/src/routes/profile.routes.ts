@@ -2,6 +2,7 @@ import { Router } from "express";
 import authGuard from "../middlewares/authGuard.middleware";
 import authenticateMiddleware from "../middlewares/authenticator.middleware";
 import {
+  deleteMyAccount,
   getMyProfile,
   updateMyProfile,
   updatePassword,
@@ -21,5 +22,7 @@ router.get("/profile", getMyProfile);
 router.put("/profile", validateBody(updateProfileSchema), updateMyProfile);
 
 router.put("/password", validateBody(updatePasswordSchema), updatePassword);
+
+router.delete("/", deleteMyAccount);
 
 export default router;
