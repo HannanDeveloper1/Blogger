@@ -17,6 +17,7 @@ model User {
   password      String?
   about         String?
   phone         String?
+  method        accountType   @default(normal)
   location      Json?
   website       String?
   socialLinks   SocialLink[] // JSON object for social media links
@@ -38,6 +39,11 @@ model User {
 enum Role {
   user
   admin
+}
+
+enum accountType {
+  normal
+  oauth
 }
 
 enum AccountStatus {

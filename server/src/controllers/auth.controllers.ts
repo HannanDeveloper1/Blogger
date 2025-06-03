@@ -38,7 +38,7 @@ export const registerUser = asyncHandler(
 
     const hashedPassword = await hashPassword(password);
     const user = await prisma.user.create({
-      data: { name, email, password: hashedPassword },
+      data: { name, email, password: hashedPassword, method: "normal" },
     });
 
     const accessToken = generateAccessToken({ userId: user.id });
