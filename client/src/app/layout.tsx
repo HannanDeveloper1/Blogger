@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
+import { QueryProvider } from "@/provider";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -123,7 +124,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${bauhaus.variable} antialiased`}>
-        {children}
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );
