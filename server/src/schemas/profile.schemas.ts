@@ -46,8 +46,8 @@ export const updateProfileSchema = z.object({
   phone: z
     .string()
     .regex(
-      /^\+?[1-9]\d{1,14}$/,
-      "Phone number must be in international E.164 format, e.g., +923011234567"
+      /^\+[1-9]\d{1,14}$/,
+      "Phone number must be in international E.164 format, e.g. +11231234567"
     )
     .optional(),
 });
