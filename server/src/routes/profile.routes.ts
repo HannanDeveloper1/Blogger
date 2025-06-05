@@ -12,6 +12,7 @@ import {
   updatePasswordSchema,
   updateProfileSchema,
 } from "../schemas/profile.schemas";
+import rateLimiter from "../utils/rateLimiter";
 
 const router = Router();
 
@@ -21,8 +22,23 @@ router.get("/profile", getMyProfile);
 
 router.put("/profile", validateBody(updateProfileSchema), updateMyProfile);
 
-router.put("/password", validateBody(updatePasswordSchema), updatePassword);
+const changePasswordLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 5,
+  message: "Too many password change attempts. Please wait a minute.",
+});
+router.put(
+  "/password",
+  changePasswordLimiter,
+  validateBody(updatePasswordSchema),
+  updatePassword
+);
 
-router.delete("/", deleteMyAccount);
+const deleteAccountLimiter = rateLimiter({
+  windowMs: 60 * 1000,
+  max: 3,
+  message: "Too many delete attempts. Please try again later.",
+});
+router.delete("/", deleteAccountLimiter, deleteMyAccount);
 
 export default router;

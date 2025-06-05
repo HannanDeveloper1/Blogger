@@ -9,6 +9,7 @@ import {
 import {
   forgetPassword,
   loginUser,
+  logoutUser,
   refreshToken,
   registerUser,
   resetPassword,
@@ -17,14 +18,15 @@ import {
 } from "../controllers/auth.controllers";
 import rateLimiter from "../utils/rateLimiter";
 import authGuard from "../middlewares/authGuard.middleware";
+import authenticateMiddleware from "../middlewares/authenticator.middleware";
 
 const router = Router();
 
 // Register user - route
 const registerLimiter = rateLimiter({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit to 10 requests per window
-  message: "Too many sign-up attempts, please try again in 15 minutes.",
+  windowMs: 60 * 1000, // 1 min
+  max: 3, // Limit to 10 requests per window
+  message: "Too many registration attempts. Please try again later.",
 });
 router.post(
   "/register",
@@ -35,25 +37,25 @@ router.post(
 
 // Login user - route
 const loginLimiter = rateLimiter({
-  windowMs: 10 * 60 * 1000, // 10 minutes
+  windowMs: 60 * 1000,
   max: 5,
-  message: "Too many login attempts, please wait 10 minutes or reset password.",
+  message: "Too many login attempts. Please try again in a minute.",
 });
 router.post("/login", loginLimiter, validateBody(loginSchema), loginUser);
 
 // Refresh Acess Token - route
 const refreshLimiter = rateLimiter({
-  windowMs: 60 * 60 * 1000, // 1 hour,
-  max: 20, // Limit to 5 requests per window,
-  message: "Too many session refreshes, please re-login.",
+  windowMs: 60 * 1000, // 1 hour,
+  max: 30,
+  message: "Too many token refresh attempts. Please try again later.",
 });
 router.put("/refresh-token", refreshLimiter, refreshToken);
 
 // Forget & reset password - routes
 const forgetLimiter = rateLimiter({
-  windowMs: 60 * 60 * 1000,
+  windowMs: 10 * 60 * 1000, // 10 min
   max: 3,
-  message: "Password reset limit reached—please try again in an hour.",
+  message: "Too many password reset requests. Please try again later.",
 });
 router.post(
   "/forget-password",
@@ -85,5 +87,7 @@ const verifyLimiter = rateLimiter({
     "Too many verification attempts—please request a new verification email.",
 });
 router.put("/verify-email", verifyLimiter, verifyEmail);
+
+router.get("/logout", authGuard, authenticateMiddleware, logoutUser);
 
 export default router;

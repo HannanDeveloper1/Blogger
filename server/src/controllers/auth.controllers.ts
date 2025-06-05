@@ -170,22 +170,12 @@ export const refreshToken = asyncHandler(
 
     const userId = await verifyRefreshToken(refreshToken);
 
-    await revokeRefreshToken(refreshToken);
-
-    const newTokenId = await issueRefreshToken(userId);
     const accessToken = generateAccessToken({ userId });
 
-    res
-      .cookie("jid", newTokenId, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: parseInt(env.REFRESH_TOKEN_EXP_DAYS) * 24 * 60 * 60 * 1000,
-      })
-      .json({
-        success: true,
-        accessToken,
-      });
+    res.json({
+      success: true,
+      accessToken,
+    });
   }
 );
 
@@ -366,5 +356,27 @@ export const verifyEmail = asyncHandler(
         text: `Your Email has been verified, Now get started by just completing your profile: ${onboardingUrl}`,
       });
     }, 5000);
+  }
+);
+
+export const logoutUser = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const refreshToken = req.cookies.jid;
+
+    if (!refreshToken) {
+      // Nothing to revoke, but still clear cookies
+      res.clearCookie("jid");
+      return res.json({ success: true, message: "Logged out" });
+    }
+
+    await revokeRefreshToken(refreshToken);
+
+    res
+      .clearCookie("jid", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+      })
+      .json({ success: true, message: "Logged out" });
   }
 );

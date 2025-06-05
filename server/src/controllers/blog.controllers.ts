@@ -184,7 +184,7 @@ export const getSingleBlog = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    const currentUser = req.user as { id: string } | undefined;
+    const currentUser = req.user;
 
     const blog = await prisma.blog.findUnique({
       where: { id: id },
@@ -234,7 +234,7 @@ export const getSingleBlog = asyncHandler(
 export const updateBlog = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const blogId = req.params.id;
-    const currentUser = (req as any).user as { id: string };
+    const currentUser = (req as any).user;
 
     const existing = await prisma.blog.findUnique({
       where: { id: blogId },
@@ -356,7 +356,7 @@ export const updateBlog = asyncHandler(
 export const deleteBlog = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const blogId = req.params.id;
-    const currentUser = (req as any).user as { id: string };
+    const currentUser = (req as any).user;
 
     const existing = await prisma.blog.findUnique({
       where: { id: blogId },
@@ -381,7 +381,7 @@ export const deleteBlog = asyncHandler(
 
 export const getUserBlogs = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const currentUser = req.user as { id: string } | undefined;
+    const currentUser = req.user;
     console.log(currentUser);
     const {
       page = 1,

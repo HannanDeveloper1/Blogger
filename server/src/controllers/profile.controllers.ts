@@ -8,41 +8,13 @@ import hashPassword from "../utils/hashPassword";
 
 export const getMyProfile = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const currentUser = (req as any).user as { id: string };
-    const user = await prisma.user.findUnique({
-      where: { id: currentUser.id },
-      select: {
-        id: true,
-        email: true,
-        username: true,
-        avatar: true,
-        name: true,
-        about: true,
-        location: true,
-        website: true,
-        socialLinks: true,
-        isVerified: true,
-        accountStatus: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    if (!user) {
-      return next(new ErrorHandler("User not found", 404));
-    }
-
-    return res.json({
-      success: true,
-      data: user,
-    });
+    return res.json({ data: req.user });
   }
 );
 
 export const updateMyProfile = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const currentUser = (req as any).user as { id: string };
+    const currentUser = (req as any).user;
     const {
       name,
       username,
@@ -133,7 +105,7 @@ export const updateMyProfile = asyncHandler(
 
 export const updatePassword = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const currentUser = (req as any).user as { id: string };
+    const currentUser = (req as any).user;
     const { oldPassword, newPassword } = req.body as {
       oldPassword: string;
       newPassword: string;
@@ -189,10 +161,8 @@ export const updatePassword = asyncHandler(
 
 export const deleteMyAccount = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const currentUser = (req as any).user as { id: string };
-
     await prisma.user.delete({
-      where: { id: currentUser.id },
+      where: { id: req.user?.id },
     });
 
     return res.sendStatus(204);
