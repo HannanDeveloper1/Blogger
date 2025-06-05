@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import { QueryProvider } from "@/provider";
+import { QueryProvider } from "@/app/providers";
 
 const inter = Inter({
   variable: "--font-inter",
